@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "cloud-deployment",
   "version": "1.0.0",
   "private": true,
@@ -6,6 +6,7 @@
     "build": "tsc"
   },
   "devDependencies": {
+    "@types/node": "^26.6.3",
     "typescript": "^5.4.0"
   }
 }
