@@ -27,6 +27,6 @@ jobs:
           npm install
           npm run build
 
-      - name: Run Test1
-        run: node dist/Test1.js
+      - name: Run npm test`n        run: npm test
+
 

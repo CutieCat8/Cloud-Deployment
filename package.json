@@ -1,12 +1,13 @@
-{
-  "name": "cloud-deployment",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "build": "tsc"
-  },
-  "devDependencies": {
-    "@types/node": "^26.6.3",
-    "typescript": "^5.4.0"
-  }
+﻿{
+    "name":  "cloud-deployment",
+    "version":  "1.0.0",
+    "private":  true,
+    "scripts":  {
+                    "build":  "tsc",
+                    "test":  "npm run build --silent \u0026\u0026 node dist/Test1.js"
+                },
+    "devDependencies":  {
+                            "@types/node":  "^26.6.3",
+                            "typescript":  "^5.4.0"
+                        }
 }
