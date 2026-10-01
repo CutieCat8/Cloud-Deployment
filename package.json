@@ -1,0 +1,11 @@
+﻿{
+  "name": "cloud-deployment",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
