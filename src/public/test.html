@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ทดสอบ User API</title>
+  </head>
+  <body>
+    <h1>Add New User</h1>
+    <form id="user-form">
+      <label>ชื่อ <input id="name" required /></label><br />
+      <label>อีเมล <input id="email" type="email" required /></label><br />
+      <label>รหัสผ่าน <input id="password" type="password" required /></label><br />
+      <button type="submit">เพิ่มผู้ใช้</button>
+    </form>
+    <pre id="result"></pre>
+
+    <script>
+      document.querySelector('#user-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const response = await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: document.querySelector('#name').value,
+            email: document.querySelector('#email').value,
+            password: document.querySelector('#password').value,
+          }),
+        });
+        const result = await response.json();
+        document.querySelector('#result').textContent = JSON.stringify(result, null, 2);
+        alert(response.ok ? 'User added successfully!' : `Failed to add user: ${result.message}`);
+      });
+    </script>
+  </body>
+</html>
