@@ -1,0 +1,31 @@
+location: Malaysia West
+name: cloudndeploy-api
+properties:
+  environmentId: /subscriptions/cd0e253e-3875-4c2e-a288-212059b02943/resourceGroups/deploy/providers/Microsoft.App/managedEnvironments/managedEnvironment-deploy-8003
+  configuration:
+    activeRevisionsMode: Single
+    ingress:
+      external: false
+      allowInsecure: false
+      targetPort: 3000
+      transport: auto
+  template:
+    containers:
+      - name: api
+        image: docker.io/sealovsalad/cloud-deploy-api:__IMAGE_TAG__
+        env:
+          - name: PORT
+            value: "3000"
+          - name: MONGODB_URI
+            secretRef: mongodb-uri
+        resources:
+          cpu: 0.25
+          memory: 0.5Gi
+    scale:
+      minReplicas: 0
+      maxReplicas: 1
+      rules:
+        - name: http-scaler
+          http:
+            metadata:
+              concurrentRequests: "10"

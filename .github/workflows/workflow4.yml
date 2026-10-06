@@ -1,4 +1,4 @@
-name: Workflow4 - Deploy Azure Container App
+name: Workflow4 - Deploy Azure Container Apps
 
 on:
   workflow_call:
@@ -7,8 +7,12 @@ on:
         description: Immutable Docker image tag to deploy
         required: true
         type: string
-      container_app_name:
-        description: Azure Container App name
+      frontend_app_name:
+        description: Frontend Azure Container App name
+        required: true
+        type: string
+      api_app_name:
+        description: API Azure Container App name
         required: true
         type: string
       resource_group:
@@ -34,7 +38,7 @@ permissions:
 
 jobs:
   deploy:
-    name: Deploy multi-container revision
+    name: Deploy frontend and API revisions
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
@@ -48,14 +52,23 @@ jobs:
           subscription-id: ${{ inputs.azure_subscription_id }}
 
       - name: Prepare immutable image tags
-        run: sed -i "s/__IMAGE_TAG__/${{ inputs.image_tag }}/g" azure/containerapp.yaml
+        run: sed -i "s/__IMAGE_TAG__/${{ inputs.image_tag }}/g" azure/containerapp-frontend.yaml azure/containerapp-api.yaml
 
-      - name: Deploy Azure Container App
+      - name: Deploy API Container App
         shell: bash
         run: |
           az config set extension.use_dynamic_install=yes_without_prompt
           az containerapp update \
-            --name "${{ inputs.container_app_name }}" \
+            --name "${{ inputs.api_app_name }}" \
             --resource-group "${{ inputs.resource_group }}" \
-            --yaml azure/containerapp.yaml \
+            --yaml azure/containerapp-api.yaml \
+            --output none
+
+      - name: Deploy frontend Container App
+        shell: bash
+        run: |
+          az containerapp update \
+            --name "${{ inputs.frontend_app_name }}" \
+            --resource-group "${{ inputs.resource_group }}" \
+            --yaml azure/containerapp-frontend.yaml \
             --output none

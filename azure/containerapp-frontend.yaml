@@ -15,17 +15,7 @@ properties:
         image: docker.io/sealovsalad/cloud-deploy-frontend:__IMAGE_TAG__
         env:
           - name: API_UPSTREAM
-            value: http://localhost:3000
-        resources:
-          cpu: 0.25
-          memory: 0.5Gi
-      - name: api
-        image: docker.io/sealovsalad/cloud-deploy-api:__IMAGE_TAG__
-        env:
-          - name: PORT
-            value: "3000"
-          - name: MONGODB_URI
-            secretRef: mongodb-uri
+            value: https://cloudndeploy-api.whitedesert-59fb1aab.malaysiawest.azurecontainerapps.io
         resources:
           cpu: 0.25
           memory: 0.5Gi
