@@ -1,13 +1,49 @@
-﻿name: Workflow4
+name: Workflow4 - Deploy Azure
 
 on:
-  workflow_run:
-    workflows: ["Workflow3"]
-    types: [completed]
+  workflow_call:
+    inputs:
+      image_tag:
+        description: Immutable Docker image tag to deploy
+        required: true
+        type: string
+      api_app_name:
+        description: Azure Web App name for the API
+        required: true
+        type: string
+      frontend_app_name:
+        description: Azure Web App name for the frontend
+        required: true
+        type: string
+    secrets:
+      AZURE_API_PUBLISH_PROFILE:
+        required: true
+      AZURE_FRONTEND_PUBLISH_PROFILE:
+        required: true
+
+permissions:
+  contents: read
 
 jobs:
-  run-workflow4:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+  deploy-api:
+    name: Deploy API Web App
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Workflow4 is running after Workflow3"
+      - name: Deploy API container
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ inputs.api_app_name }}
+          publish-profile: ${{ secrets.AZURE_API_PUBLISH_PROFILE }}
+          images: sealovsalad/cloud-deploy-api:${{ inputs.image_tag }}
+
+  deploy-frontend:
+    name: Deploy frontend Web App
+    needs: deploy-api
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy frontend container
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ inputs.frontend_app_name }}
+          publish-profile: ${{ secrets.AZURE_FRONTEND_PUBLISH_PROFILE }}
+          images: sealovsalad/cloud-deploy-frontend:${{ inputs.image_tag }}

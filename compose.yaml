@@ -1,0 +1,35 @@
+name: cloud-deploy
+
+services:
+  frontend:
+    image: sealovsalad/cloud-deploy-frontend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3001:8080"
+    environment:
+      API_UPSTREAM: http://api:3000
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  api:
+    image: sealovsalad/cloud-deploy-api:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    env_file:
+      - .env
+    environment:
+      PORT: "3000"
+    ports:
+      - "3002:3000"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

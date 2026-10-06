@@ -9,8 +9,20 @@ export const app = express();
 
 app.use(express.json());
 app.use(cors());
-app.use(express.static(path.join(process.cwd(), 'src', 'public')));
+app.get('/', (_req, res) => {
+  res.status(200).json({
+    service: 'user-api',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      users: '/api/users',
+    },
+  });
+});
 app.use('/api', userRoutes);
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok', service: 'user-api' });
+});
 
 function readEnvFile(): string {
   const envPath = path.join(process.cwd(), '.env');

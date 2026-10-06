@@ -3,34 +3,168 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ทดสอบ User API</title>
+    <title>User API Microservice</title>
+    <style>
+      body { max-width: 760px; margin: 40px auto; padding: 0 20px; font-family: system-ui, sans-serif; }
+      form { display: grid; gap: 12px; margin-bottom: 24px; }
+      input, button { box-sizing: border-box; width: 100%; padding: 10px; }
+      button { cursor: pointer; }
+      #status { min-height: 24px; }
+      .toolbar { display: flex; gap: 10px; }
+      #user-list { display: grid; gap: 10px; margin-top: 16px; }
+      .user-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px; background: #f4f4f4; border-radius: 8px; }
+      .user-info { display: grid; gap: 4px; overflow-wrap: anywhere; }
+      .user-actions { display: flex; gap: 8px; flex-shrink: 0; }
+      .user-actions button { width: auto; }
+      .delete-button { color: #a40000; }
+      #json-output { overflow: auto; padding: 16px; background: #1f2937; color: #f9fafb; border-radius: 8px; }
+    </style>
   </head>
   <body>
-    <h1>Add New User</h1>
+    <h1>User API Microservice</h1>
+    <p>หน้าเว็บนี้รับและส่งข้อมูลกับ API service ผ่าน <code>/api/users</code></p>
+
     <form id="user-form">
-      <label>ชื่อ <input id="name" required /></label><br />
-      <label>อีเมล <input id="email" type="email" required /></label><br />
-      <label>รหัสผ่าน <input id="password" type="password" required /></label><br />
+      <label>ชื่อ <input id="name" required /></label>
+      <label>อีเมล <input id="email" type="email" required /></label>
+      <label>รหัสผ่าน <input id="password" type="password" required /></label>
       <button type="submit">เพิ่มผู้ใช้</button>
     </form>
-    <pre id="result"></pre>
+
+    <div class="toolbar">
+      <button id="refresh" type="button">โหลดรายชื่อผู้ใช้</button>
+      <button id="toggle-json" type="button">ดูข้อมูล JSON</button>
+    </div>
+    <p id="status" role="status"></p>
+    <pre id="json-output" hidden>[]</pre>
+    <div id="user-list"></div>
 
     <script>
+      const userListElement = document.querySelector('#user-list');
+      const statusElement = document.querySelector('#status');
+      const jsonOutputElement = document.querySelector('#json-output');
+      const toggleJsonButton = document.querySelector('#toggle-json');
+
+      async function request(url, options) {
+        const response = await fetch(url, options);
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || `HTTP ${response.status}`);
+        }
+        return data;
+      }
+
+      function renderUsers(users) {
+        userListElement.replaceChildren();
+
+        if (users.length === 0) {
+          const emptyMessage = document.createElement('p');
+          emptyMessage.textContent = 'ยังไม่มีข้อมูลผู้ใช้';
+          userListElement.append(emptyMessage);
+          return;
+        }
+
+        for (const user of users) {
+          const row = document.createElement('div');
+          row.className = 'user-row';
+
+          const info = document.createElement('div');
+          info.className = 'user-info';
+          const name = document.createElement('strong');
+          name.textContent = user.name;
+          const email = document.createElement('span');
+          email.textContent = user.email;
+          info.append(name, email);
+
+          const actions = document.createElement('div');
+          actions.className = 'user-actions';
+
+          const editButton = document.createElement('button');
+          editButton.type = 'button';
+          editButton.textContent = 'แก้ไขอีเมล';
+          editButton.addEventListener('click', async () => {
+            const newEmail = window.prompt('กรอกอีเมลใหม่', user.email)?.trim();
+            if (!newEmail || newEmail === user.email) return;
+
+            editButton.disabled = true;
+            try {
+              await request(`/api/users/${user._id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: newEmail }),
+              });
+              statusElement.textContent = 'แก้ไขอีเมลสำเร็จ';
+              await loadUsers();
+            } catch (error) {
+              statusElement.textContent = `แก้ไขอีเมลไม่สำเร็จ: ${error.message}`;
+              editButton.disabled = false;
+            }
+          });
+
+          const deleteButton = document.createElement('button');
+          deleteButton.type = 'button';
+          deleteButton.className = 'delete-button';
+          deleteButton.textContent = 'ลบ';
+          deleteButton.addEventListener('click', async () => {
+            if (!window.confirm(`ยืนยันการลบ ${user.name}?`)) return;
+
+            deleteButton.disabled = true;
+            try {
+              await request(`/api/users/${user._id}`, { method: 'DELETE' });
+              statusElement.textContent = 'ลบผู้ใช้สำเร็จ';
+              await loadUsers();
+            } catch (error) {
+              statusElement.textContent = `ลบผู้ใช้ไม่สำเร็จ: ${error.message}`;
+              deleteButton.disabled = false;
+            }
+          });
+
+          actions.append(editButton, deleteButton);
+          row.append(info, actions);
+          userListElement.append(row);
+        }
+      }
+
+      async function loadUsers() {
+        statusElement.textContent = 'กำลังโหลด...';
+        try {
+          const users = await request('/api/users');
+          renderUsers(users);
+          jsonOutputElement.textContent = JSON.stringify(users, null, 2);
+          statusElement.textContent = `พบผู้ใช้ ${users.length} คน`;
+        } catch (error) {
+          statusElement.textContent = `เกิดข้อผิดพลาด: ${error.message}`;
+        }
+      }
+
       document.querySelector('#user-form').addEventListener('submit', async (event) => {
         event.preventDefault();
-        const response = await fetch('/api/users', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: document.querySelector('#name').value,
-            email: document.querySelector('#email').value,
-            password: document.querySelector('#password').value,
-          }),
-        });
-        const result = await response.json();
-        document.querySelector('#result').textContent = JSON.stringify(result, null, 2);
-        alert(response.ok ? 'User added successfully!' : `Failed to add user: ${result.message}`);
+        const form = event.currentTarget;
+        statusElement.textContent = 'กำลังบันทึก...';
+        try {
+          await request('/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: document.querySelector('#name').value,
+              email: document.querySelector('#email').value,
+              password: document.querySelector('#password').value,
+            }),
+          });
+          form.reset();
+          statusElement.textContent = 'เพิ่มผู้ใช้สำเร็จ';
+          await loadUsers();
+        } catch (error) {
+          statusElement.textContent = `เพิ่มผู้ใช้ไม่สำเร็จ: ${error.message}`;
+        }
       });
+
+      document.querySelector('#refresh').addEventListener('click', loadUsers);
+      toggleJsonButton.addEventListener('click', () => {
+        jsonOutputElement.hidden = !jsonOutputElement.hidden;
+        toggleJsonButton.textContent = jsonOutputElement.hidden ? 'ดูข้อมูล JSON' : 'ซ่อนข้อมูล JSON';
+      });
+      loadUsers();
     </script>
   </body>
 </html>

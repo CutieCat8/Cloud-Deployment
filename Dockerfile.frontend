@@ -1,0 +1,5 @@
+FROM nginxinc/nginx-unprivileged:1.29-alpine
+ENV API_UPSTREAM=http://api:3000
+COPY nginx.conf /etc/nginx/templates/default.conf.template
+COPY src/public/ /usr/share/nginx/html/
+EXPOSE 8080
