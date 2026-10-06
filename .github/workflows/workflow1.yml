@@ -52,12 +52,15 @@ jobs:
     secrets: inherit
 
   deploy:
-    name: Deploy to Azure
+    name: Deploy Azure Container App
     if: github.event_name != 'pull_request' && vars.CICD_ENABLED == 'true'
     needs: [publish-api, publish-frontend]
     uses: ./.github/workflows/workflow4.yml
     with:
       image_tag: ${{ github.sha }}
-      api_app_name: ${{ vars.AZURE_API_APP_NAME }}
-      frontend_app_name: ${{ vars.AZURE_FRONTEND_APP_NAME }}
+      container_app_name: ${{ vars.AZURE_CONTAINER_APP_NAME }}
+      resource_group: ${{ vars.AZURE_RESOURCE_GROUP }}
+      azure_client_id: ${{ vars.AZURE_CLIENT_ID }}
+      azure_tenant_id: ${{ vars.AZURE_TENANT_ID }}
+      azure_subscription_id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
     secrets: inherit

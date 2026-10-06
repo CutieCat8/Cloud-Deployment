@@ -1,4 +1,4 @@
-name: Workflow4 - Deploy Azure
+name: Workflow4 - Deploy Azure Container App
 
 on:
   workflow_call:
@@ -7,43 +7,55 @@ on:
         description: Immutable Docker image tag to deploy
         required: true
         type: string
-      api_app_name:
-        description: Azure Web App name for the API
+      container_app_name:
+        description: Azure Container App name
         required: true
         type: string
-      frontend_app_name:
-        description: Azure Web App name for the frontend
+      resource_group:
+        description: Azure resource group
         required: true
         type: string
-    secrets:
-      AZURE_API_PUBLISH_PROFILE:
+      azure_client_id:
+        description: Azure managed identity client ID
         required: true
-      AZURE_FRONTEND_PUBLISH_PROFILE:
+        type: string
+      azure_tenant_id:
+        description: Microsoft Entra tenant ID
         required: true
+        type: string
+      azure_subscription_id:
+        description: Azure subscription ID
+        required: true
+        type: string
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
-  deploy-api:
-    name: Deploy API Web App
+  deploy:
+    name: Deploy multi-container revision
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy API container
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ inputs.api_app_name }}
-          publish-profile: ${{ secrets.AZURE_API_PUBLISH_PROFILE }}
-          images: sealovsalad/cloud-deploy-api:${{ inputs.image_tag }}
+      - name: Checkout source
+        uses: actions/checkout@v4
 
-  deploy-frontend:
-    name: Deploy frontend Web App
-    needs: deploy-api
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy frontend container
-        uses: azure/webapps-deploy@v3
+      - name: Log in to Azure with OIDC
+        uses: azure/login@v2
         with:
-          app-name: ${{ inputs.frontend_app_name }}
-          publish-profile: ${{ secrets.AZURE_FRONTEND_PUBLISH_PROFILE }}
-          images: sealovsalad/cloud-deploy-frontend:${{ inputs.image_tag }}
+          client-id: ${{ inputs.azure_client_id }}
+          tenant-id: ${{ inputs.azure_tenant_id }}
+          subscription-id: ${{ inputs.azure_subscription_id }}
+
+      - name: Prepare immutable image tags
+        run: sed -i "s/__IMAGE_TAG__/${{ inputs.image_tag }}/g" azure/containerapp.yaml
+
+      - name: Deploy Azure Container App
+        shell: bash
+        run: |
+          az config set extension.use_dynamic_install=yes_without_prompt
+          az containerapp update \
+            --name "${{ inputs.container_app_name }}" \
+            --resource-group "${{ inputs.resource_group }}" \
+            --yaml azure/containerapp.yaml \
+            --output none

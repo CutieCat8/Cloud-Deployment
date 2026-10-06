@@ -65,22 +65,24 @@ Pipeline ใช้ workflows 4 ไฟล์ตามลำดับ:
 1. `Workflow1 - CI`: ติดตั้ง dependencies, build และ test
 2. `Workflow2 - Publish API`: build และ push API image ไป Docker Hub
 3. `Workflow3 - Publish Frontend`: build และ push frontend image ไป Docker Hub
-4. `Workflow4 - Deploy Azure`: deploy image ที่ติด tag ด้วย commit SHA ไป Azure Web Apps สองตัว
+4. `Workflow4 - Deploy Azure Container App`: deploy image ที่ติด tag ด้วย commit SHA ไปยัง `cloudndeploy`
 
 เพิ่ม Repository secrets ที่ GitHub > Settings > Secrets and variables > Actions:
 
 - `DOCKERHUB_TOKEN`: Docker Hub access token ของบัญชี `sealovsalad`
-- `AZURE_API_PUBLISH_PROFILE`: เนื้อหาทั้งหมดของ publish profile จาก API Web App
-- `AZURE_FRONTEND_PUBLISH_PROFILE`: เนื้อหาทั้งหมดของ publish profile จาก frontend Web App
 
 เพิ่ม Repository variables:
 
-- `AZURE_API_APP_NAME`: ชื่อ API Web App
-- `AZURE_FRONTEND_APP_NAME`: ชื่อ frontend Web App
+- `AZURE_CONTAINER_APP_NAME`: ชื่อ Azure Container App (`cloudndeploy`)
+- `AZURE_RESOURCE_GROUP`: Resource Group (`deploy`)
+- `AZURE_CLIENT_ID`: Client ID ของ managed identity สำหรับ GitHub OIDC
+- `AZURE_TENANT_ID`: Microsoft Entra tenant ID
+- `AZURE_SUBSCRIPTION_ID`: Azure subscription ID
 - `CICD_ENABLED`: ตั้งเป็น `true` หลังเพิ่ม secrets และ variables ครบแล้ว
 
 Workflow1 จะรัน test ทุกครั้งที่ push หรือเปิด pull request ส่วนการ push images และ deploy
 จะเริ่มทำงานเมื่อ `CICD_ENABLED=true` เท่านั้น
 
-ตั้งค่า API Web App ให้ใช้ container port `3000` พร้อม `PORT=3000` และ `MONGODB_URI`
-ส่วน frontend Web App ใช้ container port `8080` และตั้ง `API_UPSTREAM` เป็น URL ของ API Web App
+Azure Container App ใช้สอง containers ใน revision เดียวกัน: frontend รับ ingress ที่พอร์ต `8080`
+และส่ง `/api` ไปยัง API ที่ `localhost:3000` ส่วน API อ่าน `MONGODB_URI` จาก secret
+ชื่อ `mongodb-uri` ตามไฟล์ `azure/containerapp.yaml`
